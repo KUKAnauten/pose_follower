@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    
+  <arg name="robot_name" default="iiwa"/>
+  <!-- Model of the iiwa to use : iiwa7, iiwa14 -->
+  <arg name="model" default="iiwa14"/>
+  <arg name="debug" default="false"/>
+
+  <group ns="$(arg robot_name)" unless="$(arg debug)">
+    <node name="pose_follower" pkg="pose_follower" type="pose_follower" respawn="false" output="screen">
+    </node>
+  </group>
+
+  <group ns="$(arg robot_name)" if="$(arg debug)">
+    <node name="pose_follower" pkg="pose_follower" type="pose_follower" respawn="false" output="screen" launch-prefix="xterm -e gdb --args">
+    </node>
+  </group>
+
+</launch>
