@@ -34,18 +34,21 @@
 
 /* Author: Marcus Ebner */
 
-#include <std_msgs/Float32.h>
 #include <iimoveit/robot_interface.h>
 
 //TODO not only use positions, use speed and accelerations too
+//TODO try out using moveIt! planning live
 
-namespace sinus_follower {
+namespace pose_follower {
 
 
-class SinFollower : public iimoveit::RobotInterface {
+class PoseFollower : public iimoveit::RobotInterface {
 public:
-  SinFollower(ros::NodeHandle* node_handle, const std::string& planning_group, const std::string& base_frame)
-      : RobotInterface(node_handle, planning_group, base_frame) {
+  PoseFollower(ros::NodeHandle* node_handle, const std::string& planning_group, const std::string& base_frame, double scale_factor, double max_radius)
+      : RobotInterface(node_handle, planning_group, base_frame),
+        scale_factor_(scale_factor),
+        max_radius_(max_radius),
+        max_radius2_(max_radius*max_radius) {
     base_pose_.position.x = 0.5;
     base_pose_.position.y = 0.0;
     base_pose_.position.z = 0.6;
@@ -59,47 +62,62 @@ public:
     planAndMove(base_pose_, std::string("base pose"));
   }
 
-  void registerSubscriber() {
-    sinus_subscriber_ = node_handle_->subscribe("/sinus", 1, &SinFollower::sinusCallback, this);
+  void registerSubscriberRelative(const std::string& topic) {
+    pose_subscriber_ = node_handle_->subscribe(topic, 1, &PoseFollower::poseCallbackRelative, this);
   }
 
-  void publishYGoal(double addition, double duration) {
-    geometry_msgs::Pose target_pose = base_pose_;
-    target_pose.position.y += addition;
-    robot_state_.setFromIK(joint_model_group_, target_pose);
-    trajectory_msgs::JointTrajectoryPoint  trajectory_point;
-    robot_state_.copyJointGroupPositions(joint_model_group_, trajectory_point.positions);
-    trajectory_point.time_from_start = ros::Duration(duration);
-
-    trajectory_msgs::JointTrajectory single_point_trajectory;
-    single_point_trajectory.joint_names = joint_names_;
-    single_point_trajectory.points.push_back(trajectory_point);
-
-    trajectory_publisher_.publish(single_point_trajectory);
+  void registerSubscriberAbsolute(const std::string& topic) {
+    pose_subscriber_ = node_handle_->subscribe(topic, 1, &PoseFollower::poseCallbackAbsolute, this);
   }
+
+  void setBasePose(const geometry_msgs::Pose& pose) {
+    base_pose_ = pose;
+  }
+
+  geometry_msgs::Pose getBasePose() {
+    return base_pose_;
+  }
+
 
 private:
-  ros::Subscriber sinus_subscriber_;
+  ros::Subscriber pose_subscriber_;
   geometry_msgs::Pose base_pose_;
+  double scale_factor_;
+  double max_radius_;
+  double max_radius2_;
 
-  void sinusCallback(const std_msgs::Float32::ConstPtr& msg) {
-    publishYGoal(0.1 * msg->data, 0.01);
+  void poseCallbackRelative(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    double x = msg->pose.position.x * scale_factor_;
+    double y = msg->pose.position.y * scale_factor_;
+    double z = msg->pose.position.z * scale_factor_;
+    if (x*x + y*y + z*z <= max_radius2_) {
+      geometry_msgs::Pose target_pose = base_pose_;
+      target_pose.position.x += x;
+      target_pose.position.y += y;
+      target_pose.position.z += z;
+      publishPoseGoal(target_pose, 0.01);
+    }
+  }
+
+  void poseCallbackAbsolute(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    publishPoseGoal(msg->pose, 0.01);
   }
 };
-} // namespace sinus_follower
+} // namespace pose_follower
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "move_group_sintest");
+  ros::init(argc, argv, "move_group_pose_follower");
   ros::NodeHandle node_handle;
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-  sinus_follower::SinFollower sinus_follower(&node_handle, "manipulator", "world");
-  sinus_follower.moveToBasePose();
-  sinus_follower.waitForApproval();
-  sinus_follower.registerSubscriber();
-  ROS_INFO_NAMED("iiwa_test", "Subscribed to sinus!");
+  pose_follower::PoseFollower pose_follower(&node_handle, "manipulator", "world", 1, 0.15);
+  pose_follower.moveToBasePose();
+  pose_follower.waitForApproval();
+  pose_follower.registerSubscriberRelative(std::string("/poseFromFile/PoseStampedRelative"));
+  //pose_follower.registerSubscriberAbsolute(std::string("/poseFromFile/PoseStampedAbsolute"));
+  ROS_INFO_NAMED("pose_follower", "Subscribed to pose!");
 
 
   ros::Rate rate(10);
