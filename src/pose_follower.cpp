@@ -35,6 +35,7 @@
 /* Author: Marcus Ebner */
 
 #include <iimoveit/robot_interface.h>
+#include <tf/LinearMath/Quaternion.h>
 
 //TODO not only use positions, use speed and accelerations too
 //TODO try out using moveIt! planning live
@@ -91,10 +92,18 @@ private:
     double y = msg->pose.position.y * scale_factor_;
     double z = msg->pose.position.z * scale_factor_;
     if (x*x + y*y + z*z <= max_radius2_) {
+      tf::Quaternion base_quaternion(base_pose_.orientation.x, base_pose_.orientation.y, base_pose_.orientation.z, base_pose_.orientation.w);
+      tf::Quaternion next_quaternion(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
+      tf::Quaternion result_quaternion = next_quaternion * base_quaternion;
+
       geometry_msgs::Pose target_pose = base_pose_;
       target_pose.position.x += x;
       target_pose.position.y += y;
       target_pose.position.z += z;
+      target_pose.orientation.x = result_quaternion.getX();
+      target_pose.orientation.y = result_quaternion.getY();
+      target_pose.orientation.z = result_quaternion.getZ();
+      target_pose.orientation.w = result_quaternion.getW();
       publishPoseGoal(target_pose, 0.01);
     }
   }
