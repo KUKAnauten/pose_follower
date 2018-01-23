@@ -50,13 +50,14 @@ public:
         scale_factor_(scale_factor),
         max_radius_(max_radius),
         max_radius2_(max_radius*max_radius) {
-    base_pose_.position.x = 0.5;
-    base_pose_.position.y = 0.0;
-    base_pose_.position.z = 0.6;
-    base_pose_.orientation.x = 0.0;
-    base_pose_.orientation.y = 1.0;
-    base_pose_.orientation.z = 0.0;
-    base_pose_.orientation.w = 0.0;
+    base_pose_.header.frame_id = "iiwa_link_0";
+    base_pose_.pose.position.x = 0.5;
+    base_pose_.pose.position.y = 0.0;
+    base_pose_.pose.position.z = 0.6;
+    base_pose_.pose.orientation.x = 0.0;
+    base_pose_.pose.orientation.y = 1.0;
+    base_pose_.pose.orientation.z = 0.0;
+    base_pose_.pose.orientation.w = 0.0;
   }
 
   void moveToBasePose() {
@@ -71,18 +72,18 @@ public:
     pose_subscriber_ = node_handle_->subscribe(topic, 1, &PoseFollower::poseCallbackAbsolute, this);
   }
 
-  void setBasePose(const geometry_msgs::Pose& pose) {
+  void setBasePose(const geometry_msgs::PoseStamped& pose) {
     base_pose_ = pose;
   }
 
-  geometry_msgs::Pose getBasePose() {
+  geometry_msgs::PoseStamped getBasePose() {
     return base_pose_;
   }
 
 
 private:
   ros::Subscriber pose_subscriber_;
-  geometry_msgs::Pose base_pose_;
+  geometry_msgs::PoseStamped base_pose_;
   double scale_factor_;
   double max_radius_;
   double max_radius2_;
@@ -92,18 +93,19 @@ private:
     double y = msg->pose.position.y * scale_factor_;
     double z = msg->pose.position.z * scale_factor_;
     if (x*x + y*y + z*z <= max_radius2_) {
-      tf::Quaternion base_quaternion(base_pose_.orientation.x, base_pose_.orientation.y, base_pose_.orientation.z, base_pose_.orientation.w);
+      tf::Quaternion base_quaternion(base_pose_.pose.orientation.x, base_pose_.pose.orientation.y, base_pose_.pose.orientation.z, base_pose_.pose.orientation.w);
       tf::Quaternion next_quaternion(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
       tf::Quaternion result_quaternion = next_quaternion * base_quaternion;
 
-      geometry_msgs::Pose target_pose = base_pose_;
-      target_pose.position.x += x;
-      target_pose.position.y += y;
-      target_pose.position.z += z;
-      target_pose.orientation.x = result_quaternion.getX();
-      target_pose.orientation.y = result_quaternion.getY();
-      target_pose.orientation.z = result_quaternion.getZ();
-      target_pose.orientation.w = result_quaternion.getW();
+      geometry_msgs::PoseStamped target_pose = base_pose_;
+      target_pose.header.stamp = ros::Time::now();
+      target_pose.pose.position.x += x;
+      target_pose.pose.position.y += y;
+      target_pose.pose.position.z += z;
+      target_pose.pose.orientation.x = result_quaternion.getX();
+      target_pose.pose.orientation.y = result_quaternion.getY();
+      target_pose.pose.orientation.z = result_quaternion.getZ();
+      target_pose.pose.orientation.w = result_quaternion.getW();
       publishPoseGoal(target_pose, 0.01);
     }
   }
@@ -121,7 +123,7 @@ int main(int argc, char **argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-  pose_follower::PoseFollower pose_follower(&node_handle, "manipulator", "world", 1, 0.15);
+  pose_follower::PoseFollower pose_follower(&node_handle, "manipulator", "world", 0.05, 0.5);
   pose_follower.moveToBasePose();
   pose_follower.waitForApproval();
   pose_follower.registerSubscriberRelative(std::string("/poseFromFile/PoseStampedRelative"));
