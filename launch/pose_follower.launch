@@ -5,9 +5,31 @@
   <!-- Model of the iiwa to use : iiwa7, iiwa14 -->
   <arg name="model" default="iiwa14"/>
   <arg name="debug" default="false"/>
+	<arg name="scale_x" default="1"/> <!-- MOD -->
+  <arg name="scale_y" default="1"/>
+  <arg name="scale_z" default="1"/>
+  <arg name="scale_rot_x" default="1"/>
+  <arg name="scale_rot_y" default="1"/>
+  <arg name="scale_rot_z" default="1"/>
+	<arg name="rad_input" default="true"/>
+	<arg name="udp" default="false"/>
 
   <group ns="$(arg robot_name)" unless="$(arg debug)">
+  <!--
+    <group ns="pose_follower">
+      <rosparam command="load" file="$(find pose_follower)/config/kinematics.yaml"/>
+    </group>
+  --> 
     <node name="pose_follower" pkg="pose_follower" type="pose_follower" respawn="false" output="screen">
+			<param name="scale_x" value="$(arg scale_x)"/>
+			<param name="scale_y" value="$(arg scale_y)"/> 
+			<param name="scale_z" value="$(arg scale_z)"/> 
+			<param name="scale_rot_x" value="$(arg scale_rot_x)"/> 
+			<param name="scale_rot_y" value="$(arg scale_rot_y)"/> 
+			<param name="scale_rot_z" value="$(arg scale_rot_z)"/>  
+			<param name="rad_input" value="$(arg rad_input)"/>
+			<param name="udp" value="$(arg udp)"/>
+      <rosparam command="load" file="$(find iiwa_moveit)/config/kinematics.yaml"/>
     </node>
   </group>
 
