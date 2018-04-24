@@ -96,7 +96,7 @@ public:
 	}
 
 	void setBasePoseToCurrent() {
-		base_pose_ = getPose(std::string("iiwa_link_ee")).pose;	
+		base_pose_ = getPose(std::string("iiwa_s_model_finger_1")).pose; // formerly: "iiwa_link_ee"
 	}
 
 private:
@@ -113,6 +113,7 @@ private:
   double max_radius2_;
   bool first_time_;
   tf::Quaternion calib_quaternion_; // relation between initial poses of iiwa and mcs
+  double mcs_x_init_, mcs_y_init_, mcs_z_init_;
 
   void poseCallbackRelative(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     double x = msg->pose.position.x * scale_x_;
@@ -125,11 +126,15 @@ private:
       tf::Quaternion next_quaternion(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
       
       if (first_time_){
-        calib_quaternion_ = inverse(next_quaternion);    
+        calib_quaternion_ = inverse(next_quaternion);
+        mcs_x_init_ = x;
+        mcs_y_init_ = y;
+        mcs_z_init_ = z;            
         first_time_ = false;
       }  
 
       tf::Quaternion relative_quaternion = next_quaternion * calib_quaternion_;
+      tf::Quaternion relative_quaternion_mirror(-relative_quaternion.getX(), relative_quaternion.getY(), -relative_quaternion.getZ(), relative_quaternion.getW());
 
       if ( (scale_rot_x_ != 1.0) || (scale_rot_y_ != 1.0) || (scale_rot_z_ != 1.0) ) {
         tf::Matrix3x3 rotMatrix(relative_quaternion);
@@ -149,16 +154,21 @@ private:
 //        relative_quaternion.setRPY(roll, pitch, yaw);
       }
 
-      relative_quaternion = relative_quaternion * base_quaternion;
+      // relative_quaternion = relative_quaternion * base_quaternion;
+      relative_quaternion_mirror = relative_quaternion_mirror * base_quaternion;
 
       geometry_msgs::Pose target_pose = base_pose_;
-      target_pose.position.x += x;
-      target_pose.position.y += y;
-      target_pose.position.z += z;
-      target_pose.orientation.x = relative_quaternion.getX();
-      target_pose.orientation.y = relative_quaternion.getY();
-      target_pose.orientation.z = relative_quaternion.getZ();
-      target_pose.orientation.w = relative_quaternion.getW();
+      target_pose.position.x += (x - mcs_x_init_);
+      target_pose.position.y += -1.0 * (y - mcs_y_init_);
+      target_pose.position.z += (z - mcs_z_init_);
+      // target_pose.orientation.x = relative_quaternion.getX();
+      // target_pose.orientation.y = relative_quaternion.getY();
+      // target_pose.orientation.z = relative_quaternion.getZ();
+      // target_pose.orientation.w = relative_quaternion.getW();
+      target_pose.orientation.x = relative_quaternion_mirror.getX();
+      target_pose.orientation.y = relative_quaternion_mirror.getY();
+      target_pose.orientation.z = relative_quaternion_mirror.getZ();
+      target_pose.orientation.w = relative_quaternion_mirror.getW();
       publishPoseGoal(target_pose, 0.01);
     }
   }
@@ -177,14 +187,14 @@ int main(int argc, char **argv)
   spinner.start();
 	
 	double scale_x, scale_y, scale_z, scale_rot_x, scale_rot_y, scale_rot_z; 
-	node_handle.param("/iiwa/pose_follower_server/scale_x", scale_x, 1.0);
-  node_handle.param("/iiwa/pose_follower_server/scale_y", scale_y, 1.0);
-	node_handle.param("/iiwa/pose_follower_server/scale_z", scale_z, 1.0);
-  node_handle.param("/iiwa/pose_follower_server/scale_rot_x", scale_rot_x, 1.0);
-	node_handle.param("/iiwa/pose_follower_server/scale_rot_y", scale_rot_y, 1.0);
-  node_handle.param("/iiwa/pose_follower_server/scale_rot_z", scale_rot_z, 1.0);
+	node_handle.param("/iiwa/pose_follower/scale_x", scale_x, 1.0);
+  node_handle.param("/iiwa/pose_follower/scale_y", scale_y, 1.0);
+	node_handle.param("/iiwa/pose_follower/scale_z", scale_z, 1.0);
+  node_handle.param("/iiwa/pose_follower/scale_rot_x", scale_rot_x, 1.0);
+	node_handle.param("/iiwa/pose_follower/scale_rot_y", scale_rot_y, 1.0);
+  node_handle.param("/iiwa/pose_follower/scale_rot_z", scale_rot_z, 1.0);
 	bool udp_input;
-	node_handle.param("/iiwa/joint_follower/udp", udp_input, false);
+	node_handle.param("/iiwa/pose_follower/udp", udp_input, false);
 
 
   pose_follower::PoseFollower pose_follower(&node_handle, "manipulator", "world", scale_x, scale_y, scale_z, scale_rot_x, scale_rot_y, scale_rot_z, 2);
