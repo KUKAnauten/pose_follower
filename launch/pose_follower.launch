@@ -29,7 +29,7 @@
 			<param name="scale_rot_z" value="$(arg scale_rot_z)"/>  
 			<param name="rad_input" value="$(arg rad_input)"/>
 			<param name="udp" value="$(arg udp)"/>
-      <rosparam command="load" file="$(find iiwa_moveit)/config/kinematics.yaml"/>
+<!--       <rosparam command="load" file="$(find iiwa_moveit)/config/kinematics.yaml"/> -->
     </node>
   </group>
 

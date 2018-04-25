@@ -61,13 +61,32 @@ public:
 		iiwa_initial_joint_positions_.joint_names = RobotInterface::getJointNames();
 		iiwa_initial_joint_positions_.points.resize(1);
 		iiwa_initial_joint_positions_.points[0].positions.resize(7);
-		iiwa_initial_joint_positions_.points[0].positions[0] = 3.1416/180.0 * -1.0 * -30.97;
-		iiwa_initial_joint_positions_.points[0].positions[1] = 3.1416/180.0 * (-1.0 * 18.34 + 90.0);
-		iiwa_initial_joint_positions_.points[0].positions[2] = 3.1416/180.0 * -21.67;
-		iiwa_initial_joint_positions_.points[0].positions[3] = 3.1416/180.0 * -1.0 * -57.57;
-		iiwa_initial_joint_positions_.points[0].positions[4] = 3.1416/180.0 * (59.36 - 90.0); 
-		iiwa_initial_joint_positions_.points[0].positions[5] = 3.1416/180.0 * -1.0 * -4.63; 
-		iiwa_initial_joint_positions_.points[0].positions[6] = 3.1416/180.0 * 0.0;
+    // Anthropomorphic
+		// iiwa_initial_joint_positions_.points[0].positions[0] = 3.1416/180.0 * -1.0 * -30.97;
+		// iiwa_initial_joint_positions_.points[0].positions[1] = 3.1416/180.0 * (-1.0 * 18.34 + 90.0);
+		// iiwa_initial_joint_positions_.points[0].positions[2] = 3.1416/180.0 * -21.67;
+		// iiwa_initial_joint_positions_.points[0].positions[3] = 3.1416/180.0 * -1.0 * -57.57;
+		// iiwa_initial_joint_positions_.points[0].positions[4] = 3.1416/180.0 * (59.36 - 90.0); 
+		// iiwa_initial_joint_positions_.points[0].positions[5] = 3.1416/180.0 * -1.0 * -4.63; 
+		// iiwa_initial_joint_positions_.points[0].positions[6] = 3.1416/180.0 * 0.0;
+
+    // Hanoi
+    // iiwa_initial_joint_positions_.points[0].positions[0] = 3.1416/180.0 * -79.0;
+    // iiwa_initial_joint_positions_.points[0].positions[1] = 3.1416/180.0 * -44.7;
+    // iiwa_initial_joint_positions_.points[0].positions[2] = 3.1416/180.0 * 136.4;
+    // iiwa_initial_joint_positions_.points[0].positions[3] = 3.1416/180.0 * -57.3;
+    // iiwa_initial_joint_positions_.points[0].positions[4] = 3.1416/180.0 * -65.3; 
+    // iiwa_initial_joint_positions_.points[0].positions[5] = 3.1416/180.0 * 67.0; 
+    // iiwa_initial_joint_positions_.points[0].positions[6] = 3.1416/180.0 * 73.9;  
+
+    // Hanoi pose after first jump of Manipulation1
+    iiwa_initial_joint_positions_.points[0].positions[0] = -1.22537;
+    iiwa_initial_joint_positions_.points[0].positions[1] = -1.26194;
+    iiwa_initial_joint_positions_.points[0].positions[2] = 1.29466;
+    iiwa_initial_joint_positions_.points[0].positions[3] = -1.0002;
+    iiwa_initial_joint_positions_.points[0].positions[4] = 0.131128; 
+    iiwa_initial_joint_positions_.points[0].positions[5] = 0.912577; 
+    iiwa_initial_joint_positions_.points[0].positions[6] = 0.758723;   
 
   }
 
@@ -169,7 +188,7 @@ private:
       target_pose.orientation.y = relative_quaternion_mirror.getY();
       target_pose.orientation.z = relative_quaternion_mirror.getZ();
       target_pose.orientation.w = relative_quaternion_mirror.getW();
-      publishPoseGoal(target_pose, 0.01);
+      publishPoseGoalConstrained(target_pose, 0.01);
     }
   }
 
@@ -219,7 +238,7 @@ int main(int argc, char **argv)
     ROS_INFO_NAMED("pose_follower", "Subscribed to pose from file!");
   }
 
-  ros::Rate rate(10);
+  ros::Rate rate(100);
   while(ros::ok()) {
     rate.sleep();
   }
