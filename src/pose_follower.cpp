@@ -35,6 +35,10 @@
 /* Author: Marcus Ebner */
 #include <iimoveit/robot_interface.h>
 #include <tf/LinearMath/Quaternion.h>
+#include <tf/transform_broadcaster.h>
+//#include <tf2_ros/static_transform_broadcaster.h>
+//#include <geometry_msgs/TransformStamped.h>
+
 
 
 //TODO not only use positions, use speed and accelerations too
@@ -95,7 +99,13 @@ public:
     iiwa_initial_joint_positions_.points[0].positions[3] = -1.0002;
     iiwa_initial_joint_positions_.points[0].positions[4] = 0.131128; 
     iiwa_initial_joint_positions_.points[0].positions[5] = 0.912577; 
-    iiwa_initial_joint_positions_.points[0].positions[6] = 0.758723;   
+    iiwa_initial_joint_positions_.points[0].positions[6] = 0.758723;
+
+    // operator_frame_.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+    // tf::Quaternion operator_orientation;
+    // operator_orientation.setRPY(0.0, 0.0, 3.1416/180.0 * 0.0);
+    // operator_frame_.setRotation(operator_orientation);
+    // transform_broadcaster_.sendTransform(tf::StampedTransform(operator_frame_, ros::Time::now(), "world", "operator"));
 
   }
 
@@ -142,16 +152,38 @@ private:
   bool first_time_;
   tf::Quaternion calib_quaternion_; // relation between initial poses of iiwa and mcs
   double mcs_x_init_, mcs_y_init_, mcs_z_init_;
+  // tf::Transform operator_frame_;
+  // tf::TransformBroadcaster transform_broadcaster_;
+  tf::TransformListener transform_listener_;
+
 
   void poseCallbackRelative(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-    double x = msg->pose.position.x * scale_x_;
-    double y = msg->pose.position.y * scale_y_;
-    double z = msg->pose.position.z * scale_z_;
+    // double x = msg->pose.position.x * scale_x_;
+    // double y = msg->pose.position.y * scale_y_;
+    // double z = msg->pose.position.z * scale_z_;
 
-    if (x*x + y*y + z*z <= max_radius2_) {
+    // if (x*x + y*y + z*z <= max_radius2_) {
+
+      tf::StampedTransform operator_transform;
+      try{
+        transform_listener_.waitForTransform("world", "operator", ros::Time(0), ros::Duration(10.0) );
+        transform_listener_.lookupTransform("world", "operator", ros::Time(0), operator_transform);
+      }
+      catch (tf::TransformException ex){
+        ROS_ERROR("%s",ex.what());
+        ros::Duration(1.0).sleep();
+      }
+
+      geometry_msgs::PoseStamped pose_transformed;
+
+      transform_listener_.transformPose("world", *msg, pose_transformed);
+
+      double x = pose_transformed.pose.position.x * scale_x_;
+      double y = pose_transformed.pose.position.y * scale_y_;
+      double z = pose_transformed.pose.position.z * scale_z_;
 
       tf::Quaternion base_quaternion(base_pose_.orientation.x, base_pose_.orientation.y, base_pose_.orientation.z, base_pose_.orientation.w);
-      tf::Quaternion next_quaternion(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
+      tf::Quaternion next_quaternion(pose_transformed.pose.orientation.x, pose_transformed.pose.orientation.y, pose_transformed.pose.orientation.z, pose_transformed.pose.orientation.w);
       
       if (first_time_){
         calib_quaternion_ = inverse(next_quaternion);
@@ -198,7 +230,57 @@ private:
       target_pose.orientation.z = relative_quaternion_mirror.getZ();
       target_pose.orientation.w = relative_quaternion_mirror.getW();
       publishPoseGoal(target_pose, 0.01);
-    }
+
+
+//       tf::Quaternion base_quaternion(base_pose_.orientation.x, base_pose_.orientation.y, base_pose_.orientation.z, base_pose_.orientation.w);
+//       tf::Quaternion next_quaternion(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
+      
+//       if (first_time_){
+//         calib_quaternion_ = inverse(next_quaternion);
+//         mcs_x_init_ = x;
+//         mcs_y_init_ = y;
+//         mcs_z_init_ = z;            
+//         first_time_ = false;
+//       }  
+
+//       tf::Quaternion relative_quaternion = next_quaternion * calib_quaternion_;
+//       tf::Quaternion relative_quaternion_mirror(-relative_quaternion.getX(), relative_quaternion.getY(), -relative_quaternion.getZ(), relative_quaternion.getW());
+
+//       if ( (scale_rot_x_ != 1.0) || (scale_rot_y_ != 1.0) || (scale_rot_z_ != 1.0) ) {
+//         tf::Matrix3x3 rotMatrix(relative_quaternion);
+//         double euler_x, euler_y, euler_z;
+//         rotMatrix.getEulerYPR(euler_z, euler_y, euler_x);
+//         euler_x *= scale_rot_x_;
+//         euler_y *= scale_rot_y_;
+//         euler_z *= scale_rot_z_;
+//         rotMatrix.setEulerYPR(euler_z, euler_y, euler_x);
+//         rotMatrix.getRotation(relative_quaternion);
+
+// //        double roll, pitch, yaw;
+// //        rotMatrix.getRPY(roll, pitch, yaw);
+// //        roll *= scale_rot_x_;
+// //        pitch *= scale_rot_y_;
+// //        yaw *= scale_rot_z_;
+// //        relative_quaternion.setRPY(roll, pitch, yaw);
+//       }
+
+//       // relative_quaternion = relative_quaternion * base_quaternion;
+//       relative_quaternion_mirror = relative_quaternion_mirror * base_quaternion;
+
+//       geometry_msgs::Pose target_pose = base_pose_;
+//       target_pose.position.x += (x - mcs_x_init_);
+//       target_pose.position.y += -1.0 * (y - mcs_y_init_);
+//       target_pose.position.z += (z - mcs_z_init_);
+//       // target_pose.orientation.x = relative_quaternion.getX();
+//       // target_pose.orientation.y = relative_quaternion.getY();
+//       // target_pose.orientation.z = relative_quaternion.getZ();
+//       // target_pose.orientation.w = relative_quaternion.getW();
+//       target_pose.orientation.x = relative_quaternion_mirror.getX();
+//       target_pose.orientation.y = relative_quaternion_mirror.getY();
+//       target_pose.orientation.z = relative_quaternion_mirror.getZ();
+//       target_pose.orientation.w = relative_quaternion_mirror.getW();
+//       publishPoseGoal(target_pose, 0.01);
+    //}
   }
 
   void poseCallbackAbsolute(const geometry_msgs::PoseStamped::ConstPtr& msg) {
@@ -224,6 +306,14 @@ int main(int argc, char **argv)
 	bool udp_input;
 	node_handle.param("/iiwa/pose_follower/udp", udp_input, false);
 
+  // tf::Transform operator_frame;
+  // tf::TransformBroadcaster transform_broadcaster;
+
+  // operator_frame.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+  // tf::Quaternion operator_orientation;
+  // operator_orientation.setRPY(0.0, 0.0, 3.1416/180.0 * -90.0);
+  // operator_frame.setRotation(operator_orientation);
+  //transform_broadcaster.sendTransform(tf::StampedTransform(operator_frame, ros::Time::now(), "world", "operator"));
 
   pose_follower::PoseFollower pose_follower(&node_handle, "manipulator", "world", scale_x, scale_y, scale_z, scale_rot_x, scale_rot_y, scale_rot_z, 2);
 	
@@ -249,6 +339,7 @@ int main(int argc, char **argv)
 
   ros::Rate rate(100);
   while(ros::ok()) {
+    //transform_broadcaster.sendTransform(tf::StampedTransform(operator_frame, ros::Time::now(), "world", "operator"));
     rate.sleep();
   }
   ros::shutdown();
