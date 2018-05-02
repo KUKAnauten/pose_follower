@@ -137,6 +137,20 @@ public:
 		base_pose_ = getPose(std::string("iiwa_s_model_finger_1")).pose; // formerly: "iiwa_link_ee"
 	}
 
+//  void getOperatorTransform() {
+//      tf::StampedTransform operator_transform_;
+//      try{
+////        ros::Time now = ros::Time::now() - ros::Duration(0.01);
+//        ros::Time now = ros::Time(0);
+//        transform_listener_.waitForTransform("world", "operator", now, ros::Duration(10.0));
+//        transform_listener_.lookupTransform("world", "operator", now, operator_transform_);
+//      }
+//      catch (tf::TransformException ex){
+//        ROS_ERROR("%s",ex.what());
+//        ros::Duration(1.0).sleep();
+//      }    
+//  }  
+
 private:
   ros::Subscriber pose_subscriber_;
 	trajectory_msgs::JointTrajectory iiwa_initial_joint_positions_;
@@ -155,6 +169,7 @@ private:
   // tf::Transform operator_frame_;
   // tf::TransformBroadcaster transform_broadcaster_;
   tf::TransformListener transform_listener_;
+  tf::StampedTransform operator_transform_;
 
 
   void poseCallbackRelative(const geometry_msgs::PoseStamped::ConstPtr& msg) {
@@ -166,17 +181,25 @@ private:
 
       tf::StampedTransform operator_transform;
       try{
-        transform_listener_.waitForTransform("world", "operator", ros::Time(0), ros::Duration(10.0) );
+//        ros::Time now = ros::Time::now();
+//        ros::Time now = ros::Time(0);
+        ROS_INFO("1");
+        transform_listener_.waitForTransform("world", "operator", ros::Time(0), ros::Duration(10.0));
+        ROS_INFO("2");
         transform_listener_.lookupTransform("world", "operator", ros::Time(0), operator_transform);
+        ROS_INFO("3");
       }
       catch (tf::TransformException ex){
+        ROS_INFO("beep");
         ROS_ERROR("%s",ex.what());
         ros::Duration(1.0).sleep();
       }
 
       geometry_msgs::PoseStamped pose_transformed;
 
-      transform_listener_.transformPose("world", *msg, pose_transformed);
+      ROS_INFO("4");
+      transform_listener_.transformPose("world", *msg, pose_transformed); // -> Extrapolation exception comes from here
+      ROS_INFO("5");
 
       double x = pose_transformed.pose.position.x * scale_x_;
       double y = pose_transformed.pose.position.y * scale_y_;
@@ -317,6 +340,8 @@ int main(int argc, char **argv)
 
   pose_follower::PoseFollower pose_follower(&node_handle, "manipulator", "world", scale_x, scale_y, scale_z, scale_rot_x, scale_rot_y, scale_rot_z, 2);
 	
+//  pose_follower.getOperatorTransform();
+
 	// use when base pose is given
 //  pose_follower.moveToBasePose();
 
