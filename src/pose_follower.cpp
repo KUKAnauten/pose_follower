@@ -107,6 +107,8 @@ public:
     // operator_frame_.setRotation(operator_orientation);
     // transform_broadcaster_.sendTransform(tf::StampedTransform(operator_frame_, ros::Time::now(), "world", "operator"));
 
+    operator_rotation_ = tf::createQuaternionFromRPY(0.0, 0.0, 0.0);
+
   }
 
   void moveToBasePose() {
@@ -149,7 +151,18 @@ public:
 //        ROS_ERROR("%s",ex.what());
 //        ros::Duration(1.0).sleep();
 //      }    
-//  }  
+//  } 
+
+  // Own implementation of a (only rotational) transform, because transfromPose() from TransformListener throws extrapolation exception
+  geometry_msgs::PoseStamped transformOperatorPose(const geometry_msgs::PoseStamped pose_to_transform) {
+    geometry_msgs::PoseStamped transformed_pose;
+    tf::Vector3 position_vec = tf::Vector3(pose_to_transform.pose.position.x, pose_to_transform.pose.position.y, pose_to_transform.pose.position.z);
+
+    //tf::vector3TFToMsg(
+    ROS_INFO("%.4f %.4f %.4f", );
+    transformed_pose = pose_to_transform;
+    return transformed_pose;
+  } 
 
 private:
   ros::Subscriber pose_subscriber_;
@@ -168,8 +181,9 @@ private:
   double mcs_x_init_, mcs_y_init_, mcs_z_init_;
   // tf::Transform operator_frame_;
   // tf::TransformBroadcaster transform_broadcaster_;
-  tf::TransformListener transform_listener_;
-  tf::StampedTransform operator_transform_;
+  // tf::TransformListener transform_listener_;
+  // tf::StampedTransform operator_transform_;
+  tf::Quaternion operator_rotation_;
 
 
   void poseCallbackRelative(const geometry_msgs::PoseStamped::ConstPtr& msg) {
@@ -179,27 +193,30 @@ private:
 
     // if (x*x + y*y + z*z <= max_radius2_) {
 
-      tf::StampedTransform operator_transform;
-      try{
-//        ros::Time now = ros::Time::now();
-//        ros::Time now = ros::Time(0);
-        ROS_INFO("1");
-        transform_listener_.waitForTransform("world", "operator", ros::Time(0), ros::Duration(10.0));
-        ROS_INFO("2");
-        transform_listener_.lookupTransform("world", "operator", ros::Time(0), operator_transform);
-        ROS_INFO("3");
-      }
-      catch (tf::TransformException ex){
-        ROS_INFO("beep");
-        ROS_ERROR("%s",ex.what());
-        ros::Duration(1.0).sleep();
-      }
+//       tf::StampedTransform operator_transform;
+//       try{
+// //        ros::Time now = ros::Time::now();
+// //        ros::Time now = ros::Time(0);
+//         ROS_INFO("1");
+//         transform_listener_.waitForTransform("world", "operator", ros::Time(0), ros::Duration(10.0));
+//         ROS_INFO("2");
+//         transform_listener_.lookupTransform("world", "operator", ros::Time(0), operator_transform);
+//         ROS_INFO("3");
+//       }
+//       catch (tf::TransformException ex){
+//         ROS_INFO("beep");
+//         ROS_ERROR("%s",ex.what());
+//         ros::Duration(1.0).sleep();
+//       }
 
       geometry_msgs::PoseStamped pose_transformed;
 
-      ROS_INFO("4");
-      transform_listener_.transformPose("world", *msg, pose_transformed); // -> Extrapolation exception comes from here
-      ROS_INFO("5");
+      pose_transformed = transformOperatorPose(*msg);
+      //pose_transformed = *msg;
+
+      // ROS_INFO("4");
+      // transform_listener_.transformPose("world", *msg, pose_transformed); // -> Extrapolation exception comes from here
+      // ROS_INFO("5");
 
       double x = pose_transformed.pose.position.x * scale_x_;
       double y = pose_transformed.pose.position.y * scale_y_;
