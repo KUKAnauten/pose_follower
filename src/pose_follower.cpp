@@ -66,13 +66,13 @@ public:
 		iiwa_initial_joint_positions_.points.resize(1);
 		iiwa_initial_joint_positions_.points[0].positions.resize(7);
     // Anthropomorphic
-		// iiwa_initial_joint_positions_.points[0].positions[0] = 3.1416/180.0 * -1.0 * -30.97;
-		// iiwa_initial_joint_positions_.points[0].positions[1] = 3.1416/180.0 * (-1.0 * 18.34 + 90.0);
-		// iiwa_initial_joint_positions_.points[0].positions[2] = 3.1416/180.0 * -21.67;
-		// iiwa_initial_joint_positions_.points[0].positions[3] = 3.1416/180.0 * -1.0 * -57.57;
-		// iiwa_initial_joint_positions_.points[0].positions[4] = 3.1416/180.0 * (59.36 - 90.0); 
-		// iiwa_initial_joint_positions_.points[0].positions[5] = 3.1416/180.0 * (-1.0 * -4.63 + 90.0); 
-		// iiwa_initial_joint_positions_.points[0].positions[6] = 3.1416/180.0 * 0.0;
+		iiwa_initial_joint_positions_.points[0].positions[0] = 3.1416/180.0 * -1.0 * -30.97;
+		iiwa_initial_joint_positions_.points[0].positions[1] = 3.1416/180.0 * (-1.0 * 18.34 + 90.0);
+		iiwa_initial_joint_positions_.points[0].positions[2] = 3.1416/180.0 * -21.67;
+		iiwa_initial_joint_positions_.points[0].positions[3] = 3.1416/180.0 * -1.0 * -57.57;
+		iiwa_initial_joint_positions_.points[0].positions[4] = 3.1416/180.0 * (59.36 - 90.0); 
+		iiwa_initial_joint_positions_.points[0].positions[5] = 3.1416/180.0 * (-1.0 * -4.63 + 90.0); 
+		iiwa_initial_joint_positions_.points[0].positions[6] = 3.1416/180.0 * 0.0;
 
     // Same pose as anthropomorphic but after first jump of Manipulation1
     // iiwa_initial_joint_positions_.points[0].positions[0] = 0.8746766387596265;
@@ -93,13 +93,13 @@ public:
     // iiwa_initial_joint_positions_.points[0].positions[6] = 3.1416/180.0 * 73.9;  
 
     // Hanoi pose after first jump of Manipulation1
-    iiwa_initial_joint_positions_.points[0].positions[0] = -1.22537;
-    iiwa_initial_joint_positions_.points[0].positions[1] = -1.26194;
-    iiwa_initial_joint_positions_.points[0].positions[2] = 1.29466;
-    iiwa_initial_joint_positions_.points[0].positions[3] = -1.0002;
-    iiwa_initial_joint_positions_.points[0].positions[4] = 0.131128; 
-    iiwa_initial_joint_positions_.points[0].positions[5] = 0.912577; 
-    iiwa_initial_joint_positions_.points[0].positions[6] = 0.758723;
+    // iiwa_initial_joint_positions_.points[0].positions[0] = -1.22537;
+    // iiwa_initial_joint_positions_.points[0].positions[1] = -1.26194;
+    // iiwa_initial_joint_positions_.points[0].positions[2] = 1.29466;
+    // iiwa_initial_joint_positions_.points[0].positions[3] = -1.0002;
+    // iiwa_initial_joint_positions_.points[0].positions[4] = 0.131128; 
+    // iiwa_initial_joint_positions_.points[0].positions[5] = 0.912577; 
+    // iiwa_initial_joint_positions_.points[0].positions[6] = 0.758723;
 
     // operator_frame_.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
     // tf::Quaternion operator_orientation;
@@ -159,7 +159,7 @@ public:
     tf::Vector3 position_vec = tf::Vector3(pose_to_transform.pose.position.x, pose_to_transform.pose.position.y, pose_to_transform.pose.position.z);
 
     //tf::vector3TFToMsg(
-    ROS_INFO("%.4f %.4f %.4f", );
+    //ROS_INFO("%.4f %.4f %.4f", );
     transformed_pose = pose_to_transform;
     return transformed_pose;
   } 
